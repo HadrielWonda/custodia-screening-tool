@@ -4,7 +4,6 @@ import { FormEvent, useState } from "react";
 import {
   buildNurseWhatsAppLink,
   nonDiagnosticDisclaimer,
-  nurseFallbackContact,
   resultContent,
 } from "./result-content";
 import type { Classification } from "@/lib/scoring";
@@ -592,7 +591,6 @@ function ResultSummary({ submissionResult }: { submissionResult: SubmissionResul
   const { result } = submissionResult;
   const content = resultContent[result.classification];
   const whatsappLink = buildNurseWhatsAppLink(result.classification, submissionResult.referenceCode);
-  const [showWhatsAppFallback, setShowWhatsAppFallback] = useState(!whatsappLink);
   const showContributingFactors =
     result.classification === "no_diabetes_high" && result.contributingFactors.length > 0;
   const showWhatsAppHandoff = result.classification === "diabetes_high";
@@ -635,15 +633,9 @@ function ResultSummary({ submissionResult }: { submissionResult: SubmissionResul
               href={whatsappLink}
               rel="noreferrer"
               target="_blank"
-              onClick={() => setShowWhatsAppFallback(true)}
             >
               {content.actionLabel}
             </a>
-          ) : null}
-          {showWhatsAppFallback ? (
-            <p className="fallbackContact">
-              If WhatsApp does not open, use this fallback contact: {nurseFallbackContact}
-            </p>
           ) : null}
         </div>
       ) : content.actionLabel ? (

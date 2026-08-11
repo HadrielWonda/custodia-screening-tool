@@ -499,15 +499,6 @@ h2 {
   margin-top: 0;
 }
 
-.fallbackContact {
-  background: #fffdf5;
-  border: 1px solid #ead7a7;
-  border-radius: 6px;
-  color: var(--foreground);
-  margin-top: 12px;
-  padding: 12px 14px;
-}
-
 .urgent {
   color: var(--danger);
   font-weight: 700;
