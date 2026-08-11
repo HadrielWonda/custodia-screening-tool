@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test": "node --import tsx --test \"lib/**/*.test.ts\"",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
     "db:seed": "prisma db seed",
