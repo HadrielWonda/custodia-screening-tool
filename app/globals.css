@@ -190,15 +190,65 @@ h2 {
   margin-top: 24px;
 }
 
+.resultPanel-no_diabetes_high,
+.resultPanel-diabetes_high {
+  background: #fff6ed;
+  border-color: #edcaa7;
+}
+
 .resultPanel p,
-.resultPanel ul {
+.resultPanel ul,
+.resultPanel h3 {
   margin-bottom: 0;
+}
+
+.resultHeader {
+  display: grid;
+  gap: 10px;
+}
+
+.scoreLine {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.factorBox,
+.tipsBlock {
+  margin-top: 18px;
+}
+
+.factorBox h3,
+.tipsBlock h3 {
+  font-size: 1rem;
+  margin-top: 0;
+}
+
+.factorBox ul,
+.tipsBlock ul {
+  margin-top: 10px;
+  padding-left: 22px;
 }
 
 .resultPanel a {
   color: var(--accent-strong);
   display: inline-block;
   font-weight: 700;
+}
+
+.resultAction,
+.resultCallout {
+  background: var(--accent-strong);
+  border-radius: 6px;
+  color: white !important;
+  display: inline-block;
+  font-weight: 700;
+  margin-top: 16px;
+  padding: 12px 16px;
+  text-decoration: none;
+}
+
+.jsonLink {
+  margin-left: 14px;
   margin-top: 16px;
 }
 
@@ -212,6 +262,10 @@ h2 {
   color: var(--muted);
   margin: 28px 0 0;
   padding-top: 18px;
+}
+
+.resultDisclaimer {
+  margin-top: 22px;
 }
 
 @media (max-width: 720px) {

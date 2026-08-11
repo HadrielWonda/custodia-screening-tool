@@ -2,6 +2,9 @@
 
 import { FormEvent, useState } from "react";
 
+import { nonDiagnosticDisclaimer, resultContent } from "./result-content";
+import type { Classification } from "@/lib/scoring";
+
 type DiabetesStatus = "not_diagnosed" | "diagnosed";
 type FieldValue = string | number | boolean;
 type Responses = Record<string, FieldValue>;
@@ -9,7 +12,7 @@ type Responses = Record<string, FieldValue>;
 type SubmissionResult = {
   assessmentId: string;
   result: {
-    classification: string;
+    classification: Classification;
     score: number | null;
     contributingFactors: Array<{ id: string; label: string; points?: number }>;
     urgentCareRecommended: boolean;
@@ -137,7 +140,7 @@ export function QuestionnaireForm() {
 
       {submissionResult ? <ResultSummary submissionResult={submissionResult} /> : null}
 
-      <p className="disclaimer">This tool does not diagnose. It estimates risk based on your answers.</p>
+      {submissionResult ? null : <p className="disclaimer">{nonDiagnosticDisclaimer}</p>}
     </section>
   );
 }
@@ -437,21 +440,56 @@ function YesNoField({
 
 function ResultSummary({ submissionResult }: { submissionResult: SubmissionResult }) {
   const { result } = submissionResult;
+  const content = resultContent[result.classification];
+  const showContributingFactors =
+    result.classification === "no_diabetes_high" && result.contributingFactors.length > 0;
 
   return (
-    <section className="resultPanel" aria-live="polite">
-      <p className="eyebrow">Result</p>
-      <h2>{formatClassification(result.classification)}</h2>
-      <p>{result.score === null ? "Triggered by red-flag response" : `Score: ${result.score}`}</p>
+    <section className={`resultPanel resultPanel-${result.classification}`} aria-live="polite">
+      <div className="resultHeader">
+        <p className="eyebrow">{content.eyebrow}</p>
+        <h2>{content.title}</h2>
+        <p>{content.summary}</p>
+        <p className="scoreLine">
+          {result.score === null ? "Triggered by a red-flag response" : `Score: ${result.score}`}
+        </p>
+      </div>
+
       {result.urgentCareRecommended ? <p className="urgent">Please seek urgent clinical care now.</p> : null}
-      {result.contributingFactors.length > 0 ? (
+
+      {showContributingFactors ? (
+        <div className="factorBox">
+          <h3>Why this result appeared</h3>
+          <ul>
+            {result.contributingFactors.map((factor) => (
+              <li key={factor.id}>{factor.label}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <div className="tipsBlock">
+        <h3>Next steps</h3>
         <ul>
-          {result.contributingFactors.map((factor) => (
-            <li key={factor.id}>{factor.label}</li>
+          {content.tips.map((tip) => (
+            <li key={tip}>{tip}</li>
           ))}
         </ul>
+      </div>
+
+      {content.actionHref && content.actionLabel ? (
+        <a className="resultAction" href={content.actionHref} target={content.actionHref.startsWith("http") ? "_blank" : undefined}>
+          {content.actionLabel}
+        </a>
+      ) : content.actionLabel ? (
+        <p className="resultCallout">{content.actionLabel}</p>
       ) : null}
-      <a href={`/api/assessments/${submissionResult.assessmentId}/result`}>View saved result JSON</a>
+
+      <a className="jsonLink" href={`/api/assessments/${submissionResult.assessmentId}/result`}>
+        View saved result JSON
+      </a>
+
+      <p className="disclaimer resultDisclaimer">{nonDiagnosticDisclaimer}</p>
     </section>
   );
 }
@@ -470,11 +508,4 @@ function normalizeResponses(responses: Responses): Responses {
       return [key, value];
     }),
   );
-}
-
-function formatClassification(classification: string): string {
-  return classification
-    .split("_")
-    .map((word) => word[0].toUpperCase() + word.slice(1))
-    .join(" ");
 }
