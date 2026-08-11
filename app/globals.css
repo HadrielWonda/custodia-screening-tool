@@ -285,6 +285,218 @@ h2 {
   margin-top: 22px;
 }
 
+.dashboardShell {
+  max-width: 1180px;
+}
+
+.authShell {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.authPanel {
+  max-width: 560px;
+  width: 100%;
+}
+
+.authForm {
+  display: grid;
+  gap: 16px;
+}
+
+.dashboardPanel {
+  display: grid;
+  gap: 24px;
+}
+
+.dashboardHeader,
+.detailHeader {
+  align-items: start;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+}
+
+.dashboardIntro {
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 12px 0 0;
+  max-width: 720px;
+}
+
+.secondaryButton {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--foreground);
+  cursor: pointer;
+  min-height: 40px;
+  padding: 9px 14px;
+}
+
+.dashboardStats {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboardStats div,
+.detailBlock,
+.emptyState {
+  background: #f8fbf6;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.dashboardStats span {
+  display: block;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.dashboardStats p,
+.summaryList,
+.summaryList dd,
+.summaryList dt,
+.detailBlock h2 {
+  margin: 0;
+}
+
+.dashboardStats p,
+.mutedText,
+.summaryList dt {
+  color: var(--muted);
+}
+
+.dashboardTableWrap,
+.responsesTableWrap {
+  overflow-x: auto;
+}
+
+.dashboardTable,
+.responsesTable {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.dashboardTable th,
+.dashboardTable td,
+.responsesTable th,
+.responsesTable td {
+  border-bottom: 1px solid var(--line);
+  padding: 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.dashboardTable th,
+.responsesTable th {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.dashboardBackLink {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.clickableRow {
+  cursor: pointer;
+}
+
+.clickableRow:focus-visible {
+  outline: 3px solid rgba(31, 122, 90, 0.35);
+  outline-offset: -3px;
+}
+
+.rowLinkText {
+  color: var(--accent-strong);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.flaggedRow {
+  background: #fff6ed;
+}
+
+.flagBadge {
+  background: var(--danger);
+  border-radius: 999px;
+  color: white;
+  display: inline-block;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 5px 8px;
+}
+
+.detailFlag {
+  margin-top: 8px;
+}
+
+.detailGrid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+}
+
+.detailBlock {
+  display: grid;
+  gap: 14px;
+}
+
+.summaryList {
+  display: grid;
+  gap: 12px;
+}
+
+.summaryList div {
+  display: grid;
+  gap: 4px;
+}
+
+.factorList {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.factorList li {
+  align-items: start;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding-bottom: 10px;
+}
+
+.factorList li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.factorList strong {
+  white-space: nowrap;
+}
+
+.rawJsonBlock summary {
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.rawJsonBlock pre {
+  background: #1d2823;
+  border-radius: 8px;
+  color: #fffdf6;
+  overflow-x: auto;
+  padding: 14px;
+}
+
 @media (max-width: 720px) {
   .pageShell {
     padding: 18px 12px;
@@ -295,7 +507,15 @@ h2 {
   }
 
   .segmentedControl,
-  .questionGrid {
+  .questionGrid,
+  .dashboardStats,
+  .detailGrid {
     grid-template-columns: 1fr;
+  }
+
+  .dashboardHeader,
+  .detailHeader,
+  .factorList li {
+    display: grid;
   }
 }

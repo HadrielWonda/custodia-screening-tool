@@ -22,6 +22,8 @@ postgresql://postgres:postgres@localhost:5433/custodia_screening_tool?schema=pub
 
 To enable the diabetes high-risk WhatsApp handoff, set `NEXT_PUBLIC_NURSE_WHATSAPP_NUMBER` to the nurse line in international format, digits only. If the number is missing or WhatsApp does not open, the result screen shows `NEXT_PUBLIC_NURSE_FALLBACK_CONTACT` instead.
 
+The nurse dashboard is available at [http://localhost:3000/dashboard](http://localhost:3000/dashboard). Set `NURSE_DASHBOARD_PASSWORD` before signing in. `NURSE_DASHBOARD_SESSION_SECRET` signs the HTTP-only dashboard session cookie.
+
 First, run the development server:
 
 ```bash
