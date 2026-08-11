@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-
 import {
   buildNurseWhatsAppLink,
   nonDiagnosticDisclaimer,
@@ -19,7 +18,7 @@ type Question = {
   id: string;
   label: string;
   helper?: string;
-  kind: "number" | "yes_no" | "single_select" | "branch_select";
+  kind: "number" | "height_imperial" | "yes_no" | "single_select" | "branch_select";
   options?: QuestionOption[];
   inputSuffix?: string;
 };
@@ -38,6 +37,8 @@ type SubmissionResult = {
 const notDiagnosedDefaults: Responses = {
   age: "",
   heightCm: "",
+  heightFeet: "",
+  heightInches: "",
   weightKg: "",
   sex: "",
   waistCircumferenceCm: "",
@@ -78,7 +79,7 @@ const branchQuestion: Question = {
 
 const notDiagnosedQuestions: Question[] = [
   { id: "age", kind: "number", label: "How old are you?", inputSuffix: "years" },
-  { id: "heightCm", kind: "number", label: "What is your height?", inputSuffix: "cm" },
+  { id: "heightCm", kind: "height_imperial", label: "What is your height?" },
   { id: "weightKg", kind: "number", label: "What is your weight?", inputSuffix: "kg" },
   {
     id: "sex",
@@ -225,7 +226,7 @@ const diagnosedQuestions: Question[] = [
   {
     id: "medicationAdherence",
     kind: "yes_no",
-    label: "Do you take medication as prescribed?",
+    label: "Do you take your diabetes meds as prescribed?",
   },
   {
     id: "lastCheckup",
@@ -251,7 +252,7 @@ export function QuestionnaireForm() {
   const branchQuestions = diabetesStatus === "diagnosed" ? diagnosedQuestions : notDiagnosedQuestions;
   const quizQuestions = diabetesStatus ? [branchQuestion, ...branchQuestions] : [branchQuestion];
   const currentQuestion = quizQuestions[currentQuestionIndex];
-  const currentValue = currentQuestion.id === "diabetesStatus" ? diabetesStatus : responses[currentQuestion.id];
+  const currentValue = getCurrentValue(currentQuestion, diabetesStatus, responses);
   const isLastQuestion = currentQuestionIndex === quizQuestions.length - 1;
   const progressPercent = ((currentQuestionIndex + 1) / quizQuestions.length) * 100;
   const canMoveForward = hasAnsweredQuestion(currentQuestion, currentValue);
@@ -350,7 +351,7 @@ export function QuestionnaireForm() {
       <section className="panel quizPanel" aria-labelledby="questionnaire-title">
         <div className="introScreen">
           <p className="eyebrow">Diabetes risk triage</p>
-          <h1 id="questionnaire-title">Custodia Screening</h1>
+          <h1 id="questionnaire-title">Diabetes Screening</h1>
           <p className="introLead">
             Answer a focused set of questions to estimate diabetes risk or diabetes complication risk. Your result can
             guide next steps and, where appropriate, help a nurse review your screening.
@@ -383,7 +384,7 @@ export function QuestionnaireForm() {
         <div className="resultTopbar">
           <div>
             <p className="eyebrow">Screening complete</p>
-            <h1 id="result-title">Your Custodia result</h1>
+            <h1 id="result-title">Your screening result</h1>
           </div>
           <button className="secondaryButton" onClick={startOver} type="button">
             Start over
@@ -398,7 +399,7 @@ export function QuestionnaireForm() {
     <section className="panel quizPanel" aria-labelledby="questionnaire-title">
       <div className="panelHeader quizHeader">
         <p className="eyebrow">Diabetes risk triage</p>
-        <h1 id="questionnaire-title">Custodia Screening</h1>
+        <h1 id="questionnaire-title">Diabetes Screening</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="questionnaireForm quizForm">
@@ -418,6 +419,7 @@ export function QuestionnaireForm() {
 
         <QuestionCard
           question={currentQuestion}
+          responses={responses}
           value={currentValue}
           onBranchSelect={selectBranch}
           onChange={updateResponse}
@@ -448,11 +450,13 @@ export function QuestionnaireForm() {
 
 function QuestionCard({
   question,
+  responses,
   value,
   onBranchSelect,
   onChange,
 }: {
   question: Question;
+  responses: Responses;
   value: FieldValue | "";
   onBranchSelect: (diabetesStatus: DiabetesStatus) => void;
   onChange: (key: string, value: FieldValue) => void;
@@ -460,16 +464,55 @@ function QuestionCard({
   return (
     <div className="questionCard">
       <div className="questionCopy">
-        <p className="questionKicker">Custodia check</p>
+        <p className="questionKicker">Diabetes check</p>
         <h2>{question.label}</h2>
         {question.helper ? <p>{question.helper}</p> : null}
       </div>
 
-      {question.kind === "number" ? (
+      {question.kind === "height_imperial" ? (
+        <HeightQuestion responses={responses} onChange={onChange} />
+      ) : question.kind === "number" ? (
         <NumberQuestion question={question} value={value} onChange={onChange} />
       ) : (
         <OptionQuestion question={question} value={value} onBranchSelect={onBranchSelect} onChange={onChange} />
       )}
+    </div>
+  );
+}
+
+function HeightQuestion({
+  responses,
+  onChange,
+}: {
+  responses: Responses;
+  onChange: (key: string, value: FieldValue) => void;
+}) {
+  return (
+    <div className="heightQuestion">
+      <label className="heightUnitField">
+        <input
+          autoFocus
+          inputMode="numeric"
+          required
+          min="1"
+          type="number"
+          value={String(responses.heightFeet ?? "")}
+          onChange={(event) => onChange("heightFeet", event.target.value)}
+        />
+        <span>feet</span>
+      </label>
+      <label className="heightUnitField">
+        <input
+          inputMode="numeric"
+          required
+          min="0"
+          max="11"
+          type="number"
+          value={String(responses.heightInches ?? "")}
+          onChange={(event) => onChange("heightInches", event.target.value)}
+        />
+        <span>inches</span>
+      </label>
     </div>
   );
 }
@@ -485,7 +528,6 @@ function NumberQuestion({
 }) {
   return (
     <label className="numberQuestion">
-      <span>{question.inputSuffix ?? "Value"}</span>
       <input
         autoFocus
         inputMode="numeric"
@@ -495,6 +537,7 @@ function NumberQuestion({
         value={String(value)}
         onChange={(event) => onChange(question.id, event.target.value)}
       />
+      <span>{question.inputSuffix ?? "Value"}</span>
     </label>
   );
 }
@@ -560,10 +603,7 @@ function ResultSummary({ submissionResult }: { submissionResult: SubmissionResul
         <p className="eyebrow">{content.eyebrow}</p>
         <h2>{content.title}</h2>
         <p>{content.summary}</p>
-        <p className="scoreLine">
-          {result.score === null ? "Triggered by a red-flag response" : `Score: ${result.score}`}
-        </p>
-        <p className="referenceLine">Reference: {submissionResult.referenceCode}</p>
+        {result.score === null ? null : <p className="scoreLine">Score: {result.score}</p>}
       </div>
 
       {result.urgentCareRecommended ? <p className="urgent">Please seek urgent clinical care now.</p> : null}
@@ -611,32 +651,71 @@ function ResultSummary({ submissionResult }: { submissionResult: SubmissionResul
         <p className="resultCallout">{content.actionLabel}</p>
       ) : null}
 
-      <a className="jsonLink" href={`/api/assessments/${submissionResult.assessmentId}/result`}>
-        View saved result JSON
-      </a>
-
       <p className="disclaimer resultDisclaimer">{nonDiagnosticDisclaimer}</p>
     </section>
   );
 }
 
+function getCurrentValue(question: Question, diabetesStatus: DiabetesStatus | "", responses: Responses) {
+  if (question.id === "diabetesStatus") {
+    return diabetesStatus;
+  }
+
+  if (question.kind === "height_imperial") {
+    return `${responses.heightFeet ?? ""}:${responses.heightInches ?? ""}`;
+  }
+
+  return responses[question.id];
+}
+
 function normalizeResponses(responses: Responses): Responses {
   return Object.fromEntries(
-    Object.entries(responses).map(([key, value]) => {
+    Object.entries(responses).flatMap(([key, value]) => {
+      if (key === "heightFeet" || key === "heightInches") {
+        return [];
+      }
+
       if (key === "age" || key === "heightCm" || key === "weightKg") {
-        return [key, Number(value)];
+        if (key === "heightCm") {
+          return [[key, convertImperialHeightToCm(responses)]];
+        }
+
+        return [[key, Number(value)]];
       }
 
       if (key === "waistCircumferenceCm" && value !== "unknown") {
-        return [key, Number(value)];
+        return [[key, Number(value)]];
       }
 
-      return [key, value];
+      return [[key, value]];
     }),
   );
 }
 
+function convertImperialHeightToCm(responses: Responses) {
+  const feet = Number(responses.heightFeet);
+  const inches = Number(responses.heightInches);
+
+  return Math.round((feet * 12 + inches) * 2.54);
+}
+
 function hasAnsweredQuestion(question: Question, value: FieldValue | "") {
+  if (question.kind === "height_imperial") {
+    const [feetValue, inchesValue] = String(value).split(":");
+    const feet = Number(feetValue);
+    const inches = Number(inchesValue);
+
+    return (
+      feetValue.trim() !== "" &&
+      inchesValue.trim() !== "" &&
+      Number.isFinite(feet) &&
+      feet > 0 &&
+      Number.isFinite(inches) &&
+      inches >= 0 &&
+      inches < 12
+    );
+  }
+
   if (question.kind === "number") {
     return String(value).trim() !== "" && Number(value) > 0;
   }

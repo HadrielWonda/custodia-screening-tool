@@ -29,7 +29,7 @@ export default async function NurseDashboardLoginPage({ searchParams }: LoginPag
       <section className="panel authPanel">
         <div className="panelHeader">
           <p className="eyebrow">Nurse access</p>
-          <h1>Custodia dashboard</h1>
+          <h1>Diabetes dashboard</h1>
         </div>
 
         {errorMessage ? <div className="errorBox">{errorMessage}</div> : null}

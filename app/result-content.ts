@@ -2,7 +2,7 @@ import type { Classification } from "@/lib/scoring";
 
 export const nonDiagnosticDisclaimer = "This tool does not diagnose. It estimates risk based on your answers.";
 export const nurseFallbackContact =
-  process.env.NEXT_PUBLIC_NURSE_FALLBACK_CONTACT ?? "Contact the Custodia nurse desk or your nearest clinic for support.";
+  process.env.NEXT_PUBLIC_NURSE_FALLBACK_CONTACT ?? "Contact the diabetes nurse desk or your nearest clinic for support.";
 
 const nurseWhatsAppNumber = process.env.NEXT_PUBLIC_NURSE_WHATSAPP_NUMBER;
 
@@ -25,7 +25,7 @@ export function buildNurseWhatsAppLink(classification: Classification, reference
     return null;
   }
 
-  const diabetesHighWhatsAppMessage = `Hello, I completed the Custodia screening. My reference code is ${referenceCode}. My result was diabetes_high, and I would like to chat with a nurse.`;
+  const diabetesHighWhatsAppMessage = `Hello, I completed the diabetes screening. My reference code is ${referenceCode}. My result was diabetes_high, and I would like to chat with a nurse.`;
 
   return `https://wa.me/${normalizedNumber}?text=${encodeURIComponent(diabetesHighWhatsAppMessage)}`;
 }

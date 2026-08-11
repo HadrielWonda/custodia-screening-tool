@@ -253,12 +253,12 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--foreground);
-  font-size: clamp(2.2rem, 10vw, 4.8rem);
-  font-weight: 800;
+  font-size: clamp(1.85rem, 7vw, 3.65rem);
+  font-weight: 650;
   line-height: 1;
-  min-height: 96px;
+  min-height: 76px;
   min-width: 0;
-  padding: 12px 18px;
+  padding: 8px 14px;
   width: 100%;
 }
 
@@ -266,6 +266,42 @@ h2 {
   color: var(--muted);
   font-weight: 800;
   padding-bottom: 18px;
+  white-space: nowrap;
+}
+
+.heightQuestion {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 560px;
+}
+
+.heightUnitField {
+  align-items: end;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.heightUnitField input {
+  background: #fffefa;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--foreground);
+  font-size: clamp(1.85rem, 7vw, 3.65rem);
+  font-weight: 650;
+  line-height: 1;
+  min-height: 76px;
+  min-width: 0;
+  padding: 8px 14px;
+  width: 100%;
+}
+
+.heightUnitField span {
+  color: var(--muted);
+  font-weight: 800;
+  padding-bottom: 18px;
+  white-space: nowrap;
 }
 
 .optionGrid {
@@ -425,15 +461,6 @@ h2 {
   font-weight: 700;
 }
 
-.referenceLine {
-  background: #fffdf5;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  display: inline-block;
-  font-weight: 700;
-  padding: 8px 10px;
-}
-
 .factorBox,
 .tipsBlock {
   margin-top: 18px;
@@ -484,11 +511,6 @@ h2 {
   color: var(--foreground);
   margin-top: 12px;
   padding: 12px 14px;
-}
-
-.jsonLink {
-  margin-left: 14px;
-  margin-top: 16px;
 }
 
 .urgent {
@@ -744,17 +766,21 @@ h2 {
     grid-template-columns: 1fr;
   }
 
+  .heightQuestion {
+    grid-template-columns: 1fr;
+  }
+
   .numberQuestion span {
+    padding-bottom: 0;
+  }
+
+  .heightUnitField span {
     padding-bottom: 0;
   }
 
   .primaryButton,
   .secondaryButton {
     width: 100%;
-  }
-
-  .jsonLink {
-    margin-left: 0;
   }
 
   .dashboardHeader,

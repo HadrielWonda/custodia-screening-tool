@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Custodia Screening",
+  title: "Diabetes Screening",
   description: "Diabetes risk and complication screening",
 };
 
