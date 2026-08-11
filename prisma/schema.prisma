@@ -11,3 +11,64 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum DiabetesStatus {
+  DIAGNOSED     @map("diagnosed")
+  NOT_DIAGNOSED @map("not_diagnosed")
+
+  @@map("diabetes_status")
+}
+
+enum ScoringBranch {
+  RISK_OF_DIABETES @map("risk_of_diabetes")
+  COMPLICATION_RISK @map("complication_risk")
+
+  @@map("scoring_branch")
+}
+
+enum Classification {
+  NO_DIABETES_LOW  @map("no_diabetes_low")
+  NO_DIABETES_HIGH @map("no_diabetes_high")
+  DIABETES_LOW     @map("diabetes_low")
+  DIABETES_HIGH    @map("diabetes_high")
+
+  @@map("classification")
+}
+
+model Assessment {
+  id             String         @id @default(uuid())
+  sessionId      String         @map("session_id")
+  diabetesStatus DiabetesStatus @map("diabetes_status")
+  responses      Json
+  createdAt      DateTime       @default(now()) @map("created_at")
+  result         Result?
+
+  @@map("assessments")
+}
+
+model ScoringRuleVersion {
+  id            String        @id @default(uuid())
+  branch        ScoringBranch
+  versionNumber Int           @map("version_number")
+  rules         Json
+  effectiveFrom DateTime      @default(now()) @map("effective_from")
+  createdBy     String        @map("created_by")
+  results       Result[]
+
+  @@unique([branch, versionNumber])
+  @@map("scoring_rule_versions")
+}
+
+model Result {
+  id                   String             @id @default(uuid())
+  assessmentId         String             @unique @map("assessment_id")
+  scoringRuleVersionId String             @map("scoring_rule_version_id")
+  classification       Classification
+  score                Decimal?           @db.Decimal(10, 2)
+  contributingFactors  Json               @map("contributing_factors")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  assessment           Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  scoringRuleVersion   ScoringRuleVersion @relation(fields: [scoringRuleVersionId], references: [id], onDelete: Restrict)
+
+  @@map("results")
+}
