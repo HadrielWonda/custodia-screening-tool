@@ -4,8 +4,8 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Diabetes Screening",
-  description: "Diabetes risk and complication screening",
+  title: "Know Your Risk | Diabetes Screening",
+  description: "Answer a short diabetes screening questionnaire to understand your risk and see when follow-up may be helpful.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

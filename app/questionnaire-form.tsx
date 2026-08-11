@@ -351,7 +351,7 @@ export function QuestionnaireForm() {
       <section className="panel quizPanel" aria-labelledby="questionnaire-title">
         <div className="introScreen">
           <p className="eyebrow">Diabetes risk triage</p>
-          <h1 id="questionnaire-title">Diabetes Screening</h1>
+          <h1 id="questionnaire-title">Know Your Risk | Diabetes Screening</h1>
           <p className="introLead">
             Answer a focused set of questions to estimate diabetes risk or diabetes complication risk. Your result can
             guide next steps and, where appropriate, help a nurse review your screening.
@@ -399,7 +399,7 @@ export function QuestionnaireForm() {
     <section className="panel quizPanel" aria-labelledby="questionnaire-title">
       <div className="panelHeader quizHeader">
         <p className="eyebrow">Diabetes risk triage</p>
-        <h1 id="questionnaire-title">Diabetes Screening</h1>
+        <h1 id="questionnaire-title">Know Your Risk</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="questionnaireForm quizForm">
