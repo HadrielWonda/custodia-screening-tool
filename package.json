@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down",
     "lint": "eslint",
     "postinstall": "prisma generate"
   },

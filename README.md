@@ -2,6 +2,24 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+Copy the local environment template:
+
+```bash
+cp .env.example .env
+```
+
+Start Postgres in Docker:
+
+```bash
+npm run db:up
+```
+
+The default database URL is:
+
+```text
+postgresql://postgres:postgres@localhost:5433/custodia_screening_tool?schema=public
+```
+
 First, run the development server:
 
 ```bash
@@ -15,6 +33,8 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+Check database connectivity at [http://localhost:3000/api/health](http://localhost:3000/api/health).
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
