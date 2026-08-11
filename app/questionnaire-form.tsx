@@ -2,7 +2,12 @@
 
 import { FormEvent, useState } from "react";
 
-import { nonDiagnosticDisclaimer, resultContent } from "./result-content";
+import {
+  buildNurseWhatsAppLink,
+  nonDiagnosticDisclaimer,
+  nurseFallbackContact,
+  resultContent,
+} from "./result-content";
 import type { Classification } from "@/lib/scoring";
 
 type DiabetesStatus = "not_diagnosed" | "diagnosed";
@@ -441,8 +446,11 @@ function YesNoField({
 function ResultSummary({ submissionResult }: { submissionResult: SubmissionResult }) {
   const { result } = submissionResult;
   const content = resultContent[result.classification];
+  const whatsappLink = buildNurseWhatsAppLink(result.classification);
+  const [showWhatsAppFallback, setShowWhatsAppFallback] = useState(!whatsappLink);
   const showContributingFactors =
     result.classification === "no_diabetes_high" && result.contributingFactors.length > 0;
+  const showWhatsAppHandoff = result.classification === "diabetes_high";
 
   return (
     <section className={`resultPanel resultPanel-${result.classification}`} aria-live="polite">
@@ -477,10 +485,25 @@ function ResultSummary({ submissionResult }: { submissionResult: SubmissionResul
         </ul>
       </div>
 
-      {content.actionHref && content.actionLabel ? (
-        <a className="resultAction" href={content.actionHref} target={content.actionHref.startsWith("http") ? "_blank" : undefined}>
-          {content.actionLabel}
-        </a>
+      {showWhatsAppHandoff ? (
+        <div className="handoffBlock">
+          {whatsappLink ? (
+            <a
+              className="resultAction"
+              href={whatsappLink}
+              rel="noreferrer"
+              target="_blank"
+              onClick={() => setShowWhatsAppFallback(true)}
+            >
+              {content.actionLabel}
+            </a>
+          ) : null}
+          {showWhatsAppFallback ? (
+            <p className="fallbackContact">
+              If WhatsApp does not open, use this fallback contact: {nurseFallbackContact}
+            </p>
+          ) : null}
+        </div>
       ) : content.actionLabel ? (
         <p className="resultCallout">{content.actionLabel}</p>
       ) : null}

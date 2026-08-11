@@ -1,15 +1,34 @@
 import type { Classification } from "@/lib/scoring";
 
 export const nonDiagnosticDisclaimer = "This tool does not diagnose. It estimates risk based on your answers.";
+export const nurseFallbackContact =
+  process.env.NEXT_PUBLIC_NURSE_FALLBACK_CONTACT ?? "Contact the Custodia nurse desk or your nearest clinic for support.";
+
+const nurseWhatsAppNumber = process.env.NEXT_PUBLIC_NURSE_WHATSAPP_NUMBER;
+const diabetesHighWhatsAppMessage =
+  "Hello, I completed the Custodia screening. My result was diabetes_high, and I would like to chat with a nurse.";
 
 export type ResultContent = {
   eyebrow: string;
   title: string;
   summary: string;
   actionLabel?: string;
-  actionHref?: string;
   tips: string[];
 };
+
+export function buildNurseWhatsAppLink(classification: Classification): string | null {
+  if (classification !== "diabetes_high") {
+    return null;
+  }
+
+  const normalizedNumber = nurseWhatsAppNumber?.replace(/\D/g, "");
+
+  if (!normalizedNumber) {
+    return null;
+  }
+
+  return `https://wa.me/${normalizedNumber}?text=${encodeURIComponent(diabetesHighWhatsAppMessage)}`;
+}
 
 export const resultContent: Record<Classification, ResultContent> = {
   no_diabetes_low: {
@@ -54,7 +73,6 @@ export const resultContent: Record<Classification, ResultContent> = {
     summary:
       "Your answers suggest you may need timely support for diabetes-related symptoms or complication risk.",
     actionLabel: "Chat with a nurse on WhatsApp",
-    actionHref: "https://wa.me/?text=Hello%2C%20I%20completed%20the%20Custodia%20diabetes%20screening%20and%20my%20result%20said%20I%20should%20chat%20with%20a%20nurse.",
     tips: [
       "Keep taking prescribed medication unless a clinician tells you otherwise.",
       "Seek urgent care now for chest pain, shortness of breath, sudden vision changes, confusion, rapid breathing, or persistent vomiting.",

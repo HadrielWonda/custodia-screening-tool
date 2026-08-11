@@ -20,6 +20,8 @@ The default database URL is:
 postgresql://postgres:postgres@localhost:5433/custodia_screening_tool?schema=public
 ```
 
+To enable the diabetes high-risk WhatsApp handoff, set `NEXT_PUBLIC_NURSE_WHATSAPP_NUMBER` to the nurse line in international format, digits only. If the number is missing or WhatsApp does not open, the result screen shows `NEXT_PUBLIC_NURSE_FALLBACK_CONTACT` instead.
+
 First, run the development server:
 
 ```bash

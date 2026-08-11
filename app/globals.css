@@ -247,6 +247,23 @@ h2 {
   text-decoration: none;
 }
 
+.handoffBlock {
+  margin-top: 16px;
+}
+
+.handoffBlock .resultAction {
+  margin-top: 0;
+}
+
+.fallbackContact {
+  background: #fffdf5;
+  border: 1px solid #ead7a7;
+  border-radius: 6px;
+  color: var(--foreground);
+  margin-top: 12px;
+  padding: 12px 14px;
+}
+
 .jsonLink {
   margin-left: 14px;
   margin-top: 16px;
