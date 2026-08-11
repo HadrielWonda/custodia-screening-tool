@@ -13,6 +13,16 @@ import type { Classification } from "@/lib/scoring";
 type DiabetesStatus = "not_diagnosed" | "diagnosed";
 type FieldValue = string | number | boolean;
 type Responses = Record<string, FieldValue>;
+type ScreenStage = "intro" | "quiz" | "result";
+type QuestionOption = { label: string; value: string | boolean; helper?: string };
+type Question = {
+  id: string;
+  label: string;
+  helper?: string;
+  kind: "number" | "yes_no" | "single_select" | "branch_select";
+  options?: QuestionOption[];
+  inputSuffix?: string;
+};
 
 type SubmissionResult = {
   assessmentId: string;
@@ -55,16 +65,201 @@ const diagnosedDefaults: Responses = {
   lastCheckup: "",
 };
 
+const branchQuestion: Question = {
+  id: "diabetesStatus",
+  kind: "branch_select",
+  label: "Have you been diagnosed with diabetes?",
+  helper: "This first answer shapes the rest of your screening.",
+  options: [
+    { label: "I have not / I am not sure", value: "not_diagnosed", helper: "Estimate diabetes risk" },
+    { label: "I have been diagnosed", value: "diagnosed", helper: "Check complication risk" },
+  ],
+};
+
+const notDiagnosedQuestions: Question[] = [
+  { id: "age", kind: "number", label: "How old are you?", inputSuffix: "years" },
+  { id: "heightCm", kind: "number", label: "What is your height?", inputSuffix: "cm" },
+  { id: "weightKg", kind: "number", label: "What is your weight?", inputSuffix: "kg" },
+  {
+    id: "sex",
+    kind: "single_select",
+    label: "What sex should be used for this risk estimate?",
+    options: [
+      { label: "Male", value: "male" },
+      { label: "Female", value: "female" },
+    ],
+  },
+  {
+    id: "waistCircumferenceCm",
+    kind: "single_select",
+    label: "What is your waist circumference?",
+    helper: "An estimate is okay if you know the closest range.",
+    options: [
+      { label: "I don't know", value: "unknown" },
+      { label: "70 cm", value: "70" },
+      { label: "80 cm", value: "80" },
+      { label: "88 cm", value: "88" },
+      { label: "94 cm", value: "94" },
+      { label: "102 cm", value: "102" },
+      { label: "110 cm", value: "110" },
+    ],
+  },
+  {
+    id: "dailyPhysicalActivity",
+    kind: "yes_no",
+    label: "Do you get at least 30 minutes of physical activity daily?",
+  },
+  {
+    id: "dailyFruitOrVegetableIntake",
+    kind: "yes_no",
+    label: "Do you eat fruit or vegetables daily?",
+  },
+  {
+    id: "historyOfBloodPressureMedication",
+    kind: "yes_no",
+    label: "Have you ever taken blood pressure medication?",
+  },
+  {
+    id: "historyOfHighBloodGlucose",
+    kind: "yes_no",
+    label: "Have you ever had high blood glucose?",
+  },
+  {
+    id: "familyHistory",
+    kind: "single_select",
+    label: "Do you have a family history of diabetes?",
+    options: [
+      { label: "No family history", value: "none" },
+      { label: "Grandparent, aunt, uncle, or cousin", value: "extended" },
+      { label: "Parent, sibling, or child", value: "immediate" },
+    ],
+  },
+];
+
+const diagnosedQuestions: Question[] = [
+  {
+    id: "foot_wound_or_ulcer",
+    kind: "yes_no",
+    label: "Do you currently have an unhealed foot wound or ulcer?",
+  },
+  {
+    id: "sudden_vision_loss_or_blurring",
+    kind: "yes_no",
+    label: "Have you had sudden vision loss or blurring?",
+  },
+  {
+    id: "ketoacidosis_symptoms",
+    kind: "yes_no",
+    label: "Do you have nausea, vomiting, rapid breathing, or confusion?",
+  },
+  {
+    id: "chest_pain_or_shortness_of_breath",
+    kind: "yes_no",
+    label: "Do you have chest pain or shortness of breath?",
+  },
+  {
+    id: "hba1cControl",
+    kind: "single_select",
+    label: "How would you describe your HbA1c control?",
+    options: [
+      { label: "Known and in range", value: "known_good" },
+      { label: "Known and elevated", value: "known_elevated" },
+      { label: "I don't know", value: "unknown" },
+    ],
+  },
+  {
+    id: "glucoseEpisodeFrequency",
+    kind: "single_select",
+    label: "How often do you have hypo or hyperglycemic episodes?",
+    options: [
+      { label: "Rare", value: "rare" },
+      { label: "Monthly", value: "monthly" },
+      { label: "Weekly or more", value: "weekly_or_more" },
+    ],
+  },
+  {
+    id: "diabetesDuration",
+    kind: "single_select",
+    label: "How long have you had diabetes?",
+    options: [
+      { label: "Under 5 years", value: "under_5_years" },
+      { label: "5 to 10 years", value: "5_to_10_years" },
+      { label: "Over 10 years", value: "over_10_years" },
+    ],
+  },
+  {
+    id: "bloodPressureControl",
+    kind: "single_select",
+    label: "How is your blood pressure controlled?",
+    options: [
+      { label: "Controlled", value: "controlled" },
+      { label: "Uncontrolled", value: "uncontrolled" },
+      { label: "I don't know", value: "unknown" },
+    ],
+  },
+  {
+    id: "smokingStatus",
+    kind: "single_select",
+    label: "What is your smoking status?",
+    options: [
+      { label: "Non-smoker", value: "non_smoker" },
+      { label: "Former smoker", value: "former_smoker" },
+      { label: "Current smoker", value: "current_smoker" },
+    ],
+  },
+  {
+    id: "neuropathySymptoms",
+    kind: "yes_no",
+    label: "Do you have numbness, tingling, or loss of sensation?",
+  },
+  {
+    id: "retinopathySymptoms",
+    kind: "yes_no",
+    label: "Do you have blurred vision or night vision issues?",
+  },
+  {
+    id: "nephropathySignals",
+    kind: "yes_no",
+    label: "Do you have swelling, foamy urine, or unusual fatigue?",
+  },
+  {
+    id: "medicationAdherence",
+    kind: "yes_no",
+    label: "Do you take medication as prescribed?",
+  },
+  {
+    id: "lastCheckup",
+    kind: "single_select",
+    label: "When was your last diabetes checkup?",
+    options: [
+      { label: "Within 12 months", value: "within_12_months" },
+      { label: "More than 12 months ago", value: "over_12_months" },
+    ],
+  },
+];
+
 export function QuestionnaireForm() {
-  const [diabetesStatus, setDiabetesStatus] = useState<DiabetesStatus>("not_diagnosed");
+  const [stage, setStage] = useState<ScreenStage>("intro");
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [hasConsented, setHasConsented] = useState(false);
+  const [diabetesStatus, setDiabetesStatus] = useState<DiabetesStatus | "">("");
   const [responses, setResponses] = useState<Responses>(notDiagnosedDefaults);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
 
+  const branchQuestions = diabetesStatus === "diagnosed" ? diagnosedQuestions : notDiagnosedQuestions;
+  const quizQuestions = diabetesStatus ? [branchQuestion, ...branchQuestions] : [branchQuestion];
+  const currentQuestion = quizQuestions[currentQuestionIndex];
+  const currentValue = currentQuestion.id === "diabetesStatus" ? diabetesStatus : responses[currentQuestion.id];
+  const isLastQuestion = currentQuestionIndex === quizQuestions.length - 1;
+  const progressPercent = ((currentQuestionIndex + 1) / quizQuestions.length) * 100;
+  const canMoveForward = hasAnsweredQuestion(currentQuestion, currentValue);
+
   function selectBranch(nextStatus: DiabetesStatus) {
     setDiabetesStatus(nextStatus);
     setResponses(nextStatus === "not_diagnosed" ? notDiagnosedDefaults : diagnosedDefaults);
+    setCurrentQuestionIndex(0);
     setSubmissionResult(null);
     setErrors([]);
   }
@@ -73,8 +268,30 @@ export function QuestionnaireForm() {
     setResponses((currentResponses) => ({ ...currentResponses, [key]: value }));
   }
 
-  async function submitAssessment(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function startQuiz() {
+    setStage("quiz");
+    setCurrentQuestionIndex(0);
+    setErrors([]);
+    setSubmissionResult(null);
+  }
+
+  function goBack() {
+    setErrors([]);
+
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex((index) => index - 1);
+      return;
+    }
+
+    setStage("intro");
+  }
+
+  async function submitAssessment() {
+    if (!diabetesStatus) {
+      setErrors(["Please choose whether you have been diagnosed with diabetes."]);
+      return;
+    }
+
     setIsSubmitting(true);
     setErrors([]);
     setSubmissionResult(null);
@@ -93,6 +310,7 @@ export function QuestionnaireForm() {
       }
 
       setSubmissionResult(body);
+      setStage("result");
     } catch {
       setErrors(["Assessment could not be submitted. Please try again."]);
     } finally {
@@ -100,36 +318,110 @@ export function QuestionnaireForm() {
     }
   }
 
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!canMoveForward) {
+      return;
+    }
+
+    if (isLastQuestion) {
+      void submitAssessment();
+      return;
+    }
+
+    setErrors([]);
+    setCurrentQuestionIndex((index) => index + 1);
+  }
+
+  function startOver() {
+    setStage("intro");
+    setCurrentQuestionIndex(0);
+    setHasConsented(false);
+    setDiabetesStatus("");
+    setResponses(notDiagnosedDefaults);
+    setIsSubmitting(false);
+    setErrors([]);
+    setSubmissionResult(null);
+  }
+
+  if (stage === "intro") {
+    return (
+      <section className="panel quizPanel" aria-labelledby="questionnaire-title">
+        <div className="introScreen">
+          <p className="eyebrow">Diabetes risk triage</p>
+          <h1 id="questionnaire-title">Custodia Screening</h1>
+          <p className="introLead">
+            Answer a focused set of questions to estimate diabetes risk or diabetes complication risk. Your result can
+            guide next steps and, where appropriate, help a nurse review your screening.
+          </p>
+          <p className="introNote">{nonDiagnosticDisclaimer}</p>
+
+          <label className="consentField">
+            <input
+              checked={hasConsented}
+              onChange={(event) => setHasConsented(event.target.checked)}
+              type="checkbox"
+            />
+            <span>
+              I understand this is not a diagnosis and agree my answers may be used for screening and nurse review where
+              appropriate.
+            </span>
+          </label>
+
+          <button className="primaryButton startButton" disabled={!hasConsented} onClick={startQuiz} type="button">
+            Start
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (stage === "result" && submissionResult) {
+    return (
+      <section className="panel quizPanel" aria-labelledby="result-title">
+        <div className="resultTopbar">
+          <div>
+            <p className="eyebrow">Screening complete</p>
+            <h1 id="result-title">Your Custodia result</h1>
+          </div>
+          <button className="secondaryButton" onClick={startOver} type="button">
+            Start over
+          </button>
+        </div>
+        <ResultSummary submissionResult={submissionResult} />
+      </section>
+    );
+  }
+
   return (
-    <section className="panel" aria-labelledby="questionnaire-title">
-      <div className="panelHeader">
+    <section className="panel quizPanel" aria-labelledby="questionnaire-title">
+      <div className="panelHeader quizHeader">
         <p className="eyebrow">Diabetes risk triage</p>
-        <h1 id="questionnaire-title">Custodia screening</h1>
+        <h1 id="questionnaire-title">Custodia Screening</h1>
       </div>
 
-      <div className="segmentedControl" aria-label="Diabetes diagnosis status">
-        <button
-          type="button"
-          className={diabetesStatus === "not_diagnosed" ? "active" : ""}
-          onClick={() => selectBranch("not_diagnosed")}
-        >
-          I have not / I am not sure
-        </button>
-        <button
-          type="button"
-          className={diabetesStatus === "diagnosed" ? "active" : ""}
-          onClick={() => selectBranch("diagnosed")}
-        >
-          I have been diagnosed
-        </button>
-      </div>
+      <form onSubmit={handleSubmit} className="questionnaireForm quizForm">
+        <div className="progressBlock" aria-label={`Question ${currentQuestionIndex + 1} of ${quizQuestions.length}`}>
+          <div className="progressMeta">
+            <span>
+              Question {currentQuestionIndex + 1} of {quizQuestions.length}
+            </span>
+            {diabetesStatus ? (
+              <span>{diabetesStatus === "diagnosed" ? "Diagnosed pathway" : "Risk estimate pathway"}</span>
+            ) : null}
+          </div>
+          <div className="progressTrack">
+            <div className="progressFill" style={{ width: `${progressPercent}%` }} />
+          </div>
+        </div>
 
-      <form onSubmit={submitAssessment} className="questionnaireForm">
-        {diabetesStatus === "not_diagnosed" ? (
-          <NotDiagnosedQuestions responses={responses} updateResponse={updateResponse} />
-        ) : (
-          <DiagnosedQuestions responses={responses} updateResponse={updateResponse} />
-        )}
+        <QuestionCard
+          question={currentQuestion}
+          value={currentValue}
+          onBranchSelect={selectBranch}
+          onChange={updateResponse}
+        />
 
         {errors.length > 0 ? (
           <div className="errorBox" role="alert">
@@ -139,310 +431,119 @@ export function QuestionnaireForm() {
           </div>
         ) : null}
 
-        <button type="submit" className="submitButton" disabled={isSubmitting}>
-          {isSubmitting ? "Scoring..." : "Submit assessment"}
-        </button>
+        <div className="quizActions">
+          <button type="button" className="secondaryButton" onClick={goBack}>
+            Back
+          </button>
+          <button type="submit" className="primaryButton" disabled={!canMoveForward || isSubmitting}>
+            {isSubmitting ? "Scoring..." : isLastQuestion ? "See my result" : "Next"}
+          </button>
+        </div>
       </form>
 
-      {submissionResult ? <ResultSummary submissionResult={submissionResult} /> : null}
-
-      {submissionResult ? null : <p className="disclaimer">{nonDiagnosticDisclaimer}</p>}
+      <p className="disclaimer">{nonDiagnosticDisclaimer}</p>
     </section>
   );
 }
 
-function NotDiagnosedQuestions({
-  responses,
-  updateResponse,
-}: {
-  responses: Responses;
-  updateResponse: (key: string, value: FieldValue) => void;
-}) {
-  return (
-    <div className="questionGrid">
-      <NumberField label="Age" id="age" value={responses.age} onChange={updateResponse} />
-      <NumberField label="Height (cm)" id="heightCm" value={responses.heightCm} onChange={updateResponse} />
-      <NumberField label="Weight (kg)" id="weightKg" value={responses.weightKg} onChange={updateResponse} />
-      <SelectField
-        label="Sex"
-        id="sex"
-        value={responses.sex}
-        onChange={updateResponse}
-        options={[
-          ["male", "Male"],
-          ["female", "Female"],
-        ]}
-      />
-      <SelectField
-        label="Waist circumference"
-        id="waistCircumferenceCm"
-        value={responses.waistCircumferenceCm}
-        onChange={updateResponse}
-        options={[
-          ["unknown", "I don't know"],
-          ["70", "70 cm"],
-          ["80", "80 cm"],
-          ["88", "88 cm"],
-          ["94", "94 cm"],
-          ["102", "102 cm"],
-          ["110", "110 cm"],
-        ]}
-      />
-      <YesNoField
-        label="Do you get at least 30 minutes of physical activity daily?"
-        id="dailyPhysicalActivity"
-        value={responses.dailyPhysicalActivity}
-        onChange={updateResponse}
-      />
-      <YesNoField
-        label="Do you eat fruit or vegetables daily?"
-        id="dailyFruitOrVegetableIntake"
-        value={responses.dailyFruitOrVegetableIntake}
-        onChange={updateResponse}
-      />
-      <YesNoField
-        label="Have you ever taken blood pressure medication?"
-        id="historyOfBloodPressureMedication"
-        value={responses.historyOfBloodPressureMedication}
-        onChange={updateResponse}
-      />
-      <YesNoField
-        label="Have you ever had high blood glucose?"
-        id="historyOfHighBloodGlucose"
-        value={responses.historyOfHighBloodGlucose}
-        onChange={updateResponse}
-      />
-      <SelectField
-        label="Family history of diabetes"
-        id="familyHistory"
-        value={responses.familyHistory}
-        onChange={updateResponse}
-        options={[
-          ["none", "No family history"],
-          ["extended", "Grandparent, aunt, uncle, or cousin"],
-          ["immediate", "Parent, sibling, or child"],
-        ]}
-      />
-    </div>
-  );
-}
-
-function DiagnosedQuestions({
-  responses,
-  updateResponse,
-}: {
-  responses: Responses;
-  updateResponse: (key: string, value: FieldValue) => void;
-}) {
-  return (
-    <div className="questionGrid">
-      <YesNoField
-        label="Do you currently have an unhealed foot wound or ulcer?"
-        id="foot_wound_or_ulcer"
-        value={responses.foot_wound_or_ulcer}
-        onChange={updateResponse}
-      />
-      <YesNoField
-        label="Have you had sudden vision loss or blurring?"
-        id="sudden_vision_loss_or_blurring"
-        value={responses.sudden_vision_loss_or_blurring}
-        onChange={updateResponse}
-      />
-      <YesNoField
-        label="Do you have nausea, vomiting, rapid breathing, or confusion?"
-        id="ketoacidosis_symptoms"
-        value={responses.ketoacidosis_symptoms}
-        onChange={updateResponse}
-      />
-      <YesNoField
-        label="Do you have chest pain or shortness of breath?"
-        id="chest_pain_or_shortness_of_breath"
-        value={responses.chest_pain_or_shortness_of_breath}
-        onChange={updateResponse}
-      />
-      <SelectField
-        label="HbA1c control"
-        id="hba1cControl"
-        value={responses.hba1cControl}
-        onChange={updateResponse}
-        options={[
-          ["known_good", "Known and in range"],
-          ["known_elevated", "Known and elevated"],
-          ["unknown", "I don't know"],
-        ]}
-      />
-      <SelectField
-        label="Hypo/hyperglycemic episodes"
-        id="glucoseEpisodeFrequency"
-        value={responses.glucoseEpisodeFrequency}
-        onChange={updateResponse}
-        options={[
-          ["rare", "Rare"],
-          ["monthly", "Monthly"],
-          ["weekly_or_more", "Weekly or more"],
-        ]}
-      />
-      <SelectField
-        label="Duration of diabetes"
-        id="diabetesDuration"
-        value={responses.diabetesDuration}
-        onChange={updateResponse}
-        options={[
-          ["under_5_years", "Under 5 years"],
-          ["5_to_10_years", "5 to 10 years"],
-          ["over_10_years", "Over 10 years"],
-        ]}
-      />
-      <SelectField
-        label="Blood pressure control"
-        id="bloodPressureControl"
-        value={responses.bloodPressureControl}
-        onChange={updateResponse}
-        options={[
-          ["controlled", "Controlled"],
-          ["uncontrolled", "Uncontrolled"],
-          ["unknown", "I don't know"],
-        ]}
-      />
-      <SelectField
-        label="Smoking status"
-        id="smokingStatus"
-        value={responses.smokingStatus}
-        onChange={updateResponse}
-        options={[
-          ["non_smoker", "Non-smoker"],
-          ["former_smoker", "Former smoker"],
-          ["current_smoker", "Current smoker"],
-        ]}
-      />
-      <YesNoField
-        label="Do you have numbness, tingling, or loss of sensation?"
-        id="neuropathySymptoms"
-        value={responses.neuropathySymptoms}
-        onChange={updateResponse}
-      />
-      <YesNoField
-        label="Do you have blurred vision or night vision issues?"
-        id="retinopathySymptoms"
-        value={responses.retinopathySymptoms}
-        onChange={updateResponse}
-      />
-      <YesNoField
-        label="Do you have swelling, foamy urine, or unusual fatigue?"
-        id="nephropathySignals"
-        value={responses.nephropathySignals}
-        onChange={updateResponse}
-      />
-      <YesNoField
-        label="Do you take medication as prescribed?"
-        id="medicationAdherence"
-        value={responses.medicationAdherence}
-        onChange={updateResponse}
-      />
-      <SelectField
-        label="Last diabetes checkup"
-        id="lastCheckup"
-        value={responses.lastCheckup}
-        onChange={updateResponse}
-        options={[
-          ["within_12_months", "Within 12 months"],
-          ["over_12_months", "More than 12 months ago"],
-        ]}
-      />
-    </div>
-  );
-}
-
-function NumberField({
-  label,
-  id,
+function QuestionCard({
+  question,
   value,
+  onBranchSelect,
   onChange,
 }: {
-  label: string;
-  id: string;
-  value: FieldValue;
+  question: Question;
+  value: FieldValue | "";
+  onBranchSelect: (diabetesStatus: DiabetesStatus) => void;
   onChange: (key: string, value: FieldValue) => void;
 }) {
   return (
-    <label className="field">
-      <span>{label}</span>
+    <div className="questionCard">
+      <div className="questionCopy">
+        <p className="questionKicker">Custodia check</p>
+        <h2>{question.label}</h2>
+        {question.helper ? <p>{question.helper}</p> : null}
+      </div>
+
+      {question.kind === "number" ? (
+        <NumberQuestion question={question} value={value} onChange={onChange} />
+      ) : (
+        <OptionQuestion question={question} value={value} onBranchSelect={onBranchSelect} onChange={onChange} />
+      )}
+    </div>
+  );
+}
+
+function NumberQuestion({
+  question,
+  value,
+  onChange,
+}: {
+  question: Question;
+  value: FieldValue | "";
+  onChange: (key: string, value: FieldValue) => void;
+}) {
+  return (
+    <label className="numberQuestion">
+      <span>{question.inputSuffix ?? "Value"}</span>
       <input
+        autoFocus
+        inputMode="numeric"
         required
         min="1"
         type="number"
         value={String(value)}
-        onChange={(event) => onChange(id, event.target.value)}
+        onChange={(event) => onChange(question.id, event.target.value)}
       />
     </label>
   );
 }
 
-function SelectField({
-  label,
-  id,
+function OptionQuestion({
+  question,
   value,
-  options,
+  onBranchSelect,
   onChange,
 }: {
-  label: string;
-  id: string;
-  value: FieldValue;
-  options: Array<[string, string]>;
+  question: Question;
+  value: FieldValue | "";
+  onBranchSelect: (diabetesStatus: DiabetesStatus) => void;
   onChange: (key: string, value: FieldValue) => void;
 }) {
+  const options = question.kind === "yes_no" ? yesNoOptions : question.options ?? [];
+
   return (
-    <label className="field">
-      <span>{label}</span>
-      <select required value={String(value)} onChange={(event) => onChange(id, event.target.value)}>
-        <option value="">Select one</option>
-        {options.map(([optionValue, optionLabel]) => (
-          <option key={optionValue} value={optionValue}>
-            {optionLabel}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className={`optionGrid optionGrid-${question.kind}`} role="group" aria-label={question.label}>
+      {options.map((option) => {
+        const isSelected = value === option.value;
+
+        return (
+          <button
+            type="button"
+            className={isSelected ? "optionTile selected" : "optionTile"}
+            key={String(option.value)}
+            onClick={() => {
+              if (question.kind === "branch_select") {
+                onBranchSelect(option.value as DiabetesStatus);
+                return;
+              }
+
+              onChange(question.id, option.value);
+            }}
+          >
+            <span>{option.label}</span>
+            {option.helper ? <small>{option.helper}</small> : null}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
-function YesNoField({
-  label,
-  id,
-  value,
-  onChange,
-}: {
-  label: string;
-  id: string;
-  value: FieldValue;
-  onChange: (key: string, value: FieldValue) => void;
-}) {
-  return (
-    <fieldset className="field radioField">
-      <legend>{label}</legend>
-      <label>
-        <input
-          required
-          type="radio"
-          name={id}
-          checked={value === true}
-          onChange={() => onChange(id, true)}
-        />
-        Yes
-      </label>
-      <label>
-        <input
-          required
-          type="radio"
-          name={id}
-          checked={value === false}
-          onChange={() => onChange(id, false)}
-        />
-        No
-      </label>
-    </fieldset>
-  );
-}
+const yesNoOptions: QuestionOption[] = [
+  { label: "Yes", value: true },
+  { label: "No", value: false },
+];
 
 function ResultSummary({ submissionResult }: { submissionResult: SubmissionResult }) {
   const { result } = submissionResult;
@@ -533,4 +634,12 @@ function normalizeResponses(responses: Responses): Responses {
       return [key, value];
     }),
   );
+}
+
+function hasAnsweredQuestion(question: Question, value: FieldValue | "") {
+  if (question.kind === "number") {
+    return String(value).trim() !== "" && Number(value) > 0;
+  }
+
+  return value !== "";
 }
