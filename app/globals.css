@@ -1,14 +1,14 @@
 :root {
-  --background: #edf4f1;
-  --foreground: #182521;
-  --muted: #687872;
+  --background: #eef6ff;
+  --foreground: #172333;
+  --muted: #657589;
   --panel: #fffefa;
-  --line: #d8e1dc;
-  --accent: #178062;
-  --accent-strong: #0f5c49;
-  --accent-soft: #e5f4ee;
-  --ink-blue: #143d4f;
-  --warm: #d9895b;
+  --line: #d6e5f4;
+  --accent: #4F9EEA;
+  --accent-strong: #1f69b3;
+  --accent-soft: #e7f2fe;
+  --ink-blue: #17395f;
+  --warm: #d9825d;
   --danger: #a23d2b;
 }
 
@@ -19,8 +19,8 @@
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 18% 18%, rgba(23, 128, 98, 0.18), transparent 28%),
-    radial-gradient(circle at 82% 12%, rgba(20, 61, 79, 0.13), transparent 25%),
+    radial-gradient(circle at 18% 18%, rgba(79, 158, 234, 0.22), transparent 28%),
+    radial-gradient(circle at 82% 12%, rgba(23, 57, 95, 0.14), transparent 25%),
     linear-gradient(145deg, rgba(217, 137, 91, 0.12), transparent 38%),
     var(--background);
   color: var(--foreground);
@@ -138,7 +138,7 @@ h2 {
 }
 
 .introNote {
-  background: #f6faf8;
+  background: #f4f9ff;
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--muted);
@@ -333,7 +333,7 @@ h2 {
 }
 
 .optionTile:hover {
-  border-color: rgba(23, 128, 98, 0.55);
+  border-color: rgba(79, 158, 234, 0.6);
   box-shadow: 0 12px 28px rgba(22, 42, 35, 0.08);
   transform: translateY(-1px);
 }
@@ -341,7 +341,7 @@ h2 {
 .optionTile.selected {
   background: var(--accent-soft);
   border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent), 0 14px 34px rgba(23, 128, 98, 0.14);
+  box-shadow: inset 0 0 0 1px var(--accent), 0 14px 34px rgba(79, 158, 234, 0.18);
 }
 
 .optionTile span {
@@ -574,7 +574,7 @@ h2 {
 .dashboardStats div,
 .detailBlock,
 .emptyState {
-  background: #f8fbf6;
+  background: #f4f9ff;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 16px;
@@ -599,6 +599,59 @@ h2 {
 .mutedText,
 .summaryList dt {
   color: var(--muted);
+}
+
+.dashboardSearch {
+  background: #f4f9ff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+}
+
+.dashboardSearch label {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.dashboardSearch div {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.dashboardSearch input {
+  appearance: none;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--foreground);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.2;
+  min-height: 48px;
+  outline: none;
+  padding: 12px 14px;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+  width: 100%;
+}
+
+.dashboardSearch input::placeholder {
+  color: #7c8c86;
+}
+
+.dashboardSearch input:focus {
+  border-color: var(--accent-strong);
+  box-shadow: 0 0 0 3px rgba(79, 158, 234, 0.22);
+}
+
+.dashboardSearch .secondaryButton {
+  align-items: center;
+  display: inline-flex;
+  text-decoration: none;
 }
 
 .dashboardTableWrap,
@@ -638,7 +691,7 @@ h2 {
 }
 
 .clickableRow:focus-visible {
-  outline: 3px solid rgba(31, 122, 90, 0.35);
+  outline: 3px solid rgba(79, 158, 234, 0.38);
   outline-offset: -3px;
 }
 
@@ -790,6 +843,15 @@ h2 {
   .dashboardStats,
   .detailGrid {
     grid-template-columns: 1fr;
+  }
+
+  .dashboardSearch div {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .dashboardSearch input {
+    width: 100%;
   }
 
   .numberQuestion {

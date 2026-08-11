@@ -171,7 +171,7 @@ const diagnosedQuestions: Question[] = [
   {
     id: "glucoseEpisodeFrequency",
     kind: "single_select",
-    label: "How often do you have hypo or hyperglycemic episodes?",
+    label: "How often do you have high or low blood sugar episodes?",
     options: [
       { label: "Rare", value: "rare" },
       { label: "Monthly", value: "monthly" },

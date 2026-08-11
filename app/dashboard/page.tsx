@@ -10,12 +10,29 @@ import type { Classification, DiabetesStatus, ScoringBranch } from "@/lib/scorin
 
 export const dynamic = "force-dynamic";
 
-export default async function NurseDashboardPage() {
+type NurseDashboardPageProps = {
+  searchParams: Promise<{
+    reference?: string;
+  }>;
+};
+
+export default async function NurseDashboardPage({ searchParams }: NurseDashboardPageProps) {
   if (!(await isNurseAuthenticated())) {
     redirect("/dashboard/login");
   }
 
+  const { reference } = await searchParams;
+  const referenceQuery = reference?.trim() ?? "";
+
   const assessments = await prisma.assessment.findMany({
+    where: referenceQuery
+      ? {
+          referenceCode: {
+            contains: referenceQuery,
+            mode: "insensitive",
+          },
+        }
+      : undefined,
     include: {
       result: {
         include: {
@@ -50,7 +67,7 @@ export default async function NurseDashboardPage() {
         <div className="dashboardStats" aria-label="Assessment totals">
           <div>
             <span>{assessments.length}</span>
-            <p>Total assessments</p>
+            <p>{referenceQuery ? "Matching assessments" : "Total assessments"}</p>
           </div>
           <div>
             <span>{assessments.filter((assessment) => isDiabetesHighRisk(assessment)).length}</span>
@@ -58,8 +75,33 @@ export default async function NurseDashboardPage() {
           </div>
         </div>
 
+        <form className="dashboardSearch" action="/dashboard">
+          <label htmlFor="reference">Search by reference</label>
+          <div>
+            <input
+              id="reference"
+              name="reference"
+              placeholder="Enter reference code"
+              type="search"
+              defaultValue={referenceQuery}
+            />
+            <button className="primaryButton" type="submit">
+              Search
+            </button>
+            {referenceQuery ? (
+              <a className="secondaryButton" href="/dashboard">
+                Clear
+              </a>
+            ) : null}
+          </div>
+        </form>
+
         {assessments.length === 0 ? (
-          <div className="emptyState">No assessments have been submitted yet.</div>
+          <div className="emptyState">
+            {referenceQuery
+              ? `No assessments match reference "${referenceQuery}".`
+              : "No assessments have been submitted yet."}
+          </div>
         ) : (
           <div className="dashboardTableWrap">
             <table className="dashboardTable">
