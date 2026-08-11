@@ -84,7 +84,7 @@ const notDiagnosedQuestions: Question[] = [
   {
     id: "sex",
     kind: "single_select",
-    label: "What sex should be used for this risk estimate?",
+    label: "What is your gender?",
     options: [
       { label: "Male", value: "male" },
       { label: "Female", value: "female" },
@@ -603,7 +603,6 @@ function ResultSummary({ submissionResult }: { submissionResult: SubmissionResul
         <p className="eyebrow">{content.eyebrow}</p>
         <h2>{content.title}</h2>
         <p>{content.summary}</p>
-        {result.score === null ? null : <p className="scoreLine">Score: {result.score}</p>}
       </div>
 
       {result.urgentCareRecommended ? <p className="urgent">Please seek urgent clinical care now.</p> : null}
