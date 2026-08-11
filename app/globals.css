@@ -1,0 +1,230 @@
+:root {
+  --background: #eef3ef;
+  --foreground: #1d2823;
+  --muted: #65736c;
+  --panel: #fffdf6;
+  --line: #d7dfd6;
+  --accent: #1f7a5a;
+  --accent-strong: #15563f;
+  --danger: #a23d2b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    linear-gradient(135deg, rgba(31, 122, 90, 0.12), transparent 34%),
+    linear-gradient(315deg, rgba(202, 122, 55, 0.14), transparent 30%),
+    var(--background);
+  color: var(--foreground);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.pageShell {
+  margin: 0 auto;
+  max-width: 980px;
+  min-height: 100vh;
+  padding: 40px 20px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 20px 70px rgba(30, 42, 36, 0.12);
+  padding: 28px;
+}
+
+.panelHeader {
+  margin-bottom: 22px;
+}
+
+.eyebrow {
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+h1,
+h2 {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1;
+}
+
+h2 {
+  font-size: 1.6rem;
+}
+
+.segmentedControl {
+  background: #edf4ed;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 24px;
+  padding: 6px;
+}
+
+.segmentedControl button,
+.submitButton {
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.segmentedControl button {
+  background: transparent;
+  color: var(--muted);
+  min-height: 44px;
+  padding: 10px 12px;
+}
+
+.segmentedControl button.active {
+  background: var(--accent);
+  color: white;
+}
+
+.questionnaireForm {
+  display: grid;
+  gap: 20px;
+}
+
+.questionGrid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field span,
+.field legend {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.field input,
+.field select {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  min-height: 44px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.radioField {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin: 0;
+  padding: 12px;
+}
+
+.radioField label {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+  margin-right: 16px;
+}
+
+.radioField input {
+  min-height: auto;
+  width: auto;
+}
+
+.submitButton {
+  background: var(--accent-strong);
+  color: white;
+  min-height: 48px;
+  padding: 12px 18px;
+}
+
+.submitButton:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.errorBox,
+.resultPanel {
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.errorBox {
+  background: #fff0eb;
+  border: 1px solid #f0c7bb;
+  color: var(--danger);
+}
+
+.errorBox p {
+  margin: 0 0 8px;
+}
+
+.errorBox p:last-child {
+  margin-bottom: 0;
+}
+
+.resultPanel {
+  background: #edf8f2;
+  border: 1px solid #bcdccc;
+  margin-top: 24px;
+}
+
+.resultPanel p,
+.resultPanel ul {
+  margin-bottom: 0;
+}
+
+.resultPanel a {
+  color: var(--accent-strong);
+  display: inline-block;
+  font-weight: 700;
+  margin-top: 16px;
+}
+
+.urgent {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.disclaimer {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  margin: 28px 0 0;
+  padding-top: 18px;
+}
+
+@media (max-width: 720px) {
+  .pageShell {
+    padding: 18px 12px;
+  }
+
+  .panel {
+    padding: 18px;
+  }
+
+  .segmentedControl,
+  .questionGrid {
+    grid-template-columns: 1fr;
+  }
+}

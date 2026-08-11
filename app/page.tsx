@@ -1,7 +1,9 @@
+import { QuestionnaireForm } from "./questionnaire-form";
+
 export default function Home() {
   return (
-    <main>
-      <div>Hello world!</div>
+    <main className="pageShell">
+      <QuestionnaireForm />
     </main>
   );
 }
