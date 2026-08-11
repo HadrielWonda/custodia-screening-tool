@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
   const saved = await prisma.$transaction(async (transaction) => {
     const assessment = await transaction.assessment.create({
       data: {
+        referenceCode: createAssessmentReferenceCode(),
         sessionId,
         diabetesStatus: toPrismaDiabetesStatus(validation.input.diabetesStatus),
         responses: validation.responses,
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest) {
   const response = NextResponse.json(
     {
       assessmentId: saved.assessment.id,
+      referenceCode: saved.assessment.referenceCode,
       resultId: saved.result.id,
       scoringRuleVersion: activeRuleVersion.versionNumber,
       result: scoringResult,
@@ -82,4 +84,8 @@ export async function POST(request: NextRequest) {
   });
 
   return response;
+}
+
+function createAssessmentReferenceCode() {
+  return `CST-${crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase()}`;
 }

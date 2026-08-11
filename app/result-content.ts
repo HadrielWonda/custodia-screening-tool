@@ -5,8 +5,6 @@ export const nurseFallbackContact =
   process.env.NEXT_PUBLIC_NURSE_FALLBACK_CONTACT ?? "Contact the Custodia nurse desk or your nearest clinic for support.";
 
 const nurseWhatsAppNumber = process.env.NEXT_PUBLIC_NURSE_WHATSAPP_NUMBER;
-const diabetesHighWhatsAppMessage =
-  "Hello, I completed the Custodia screening. My result was diabetes_high, and I would like to chat with a nurse.";
 
 export type ResultContent = {
   eyebrow: string;
@@ -16,7 +14,7 @@ export type ResultContent = {
   tips: string[];
 };
 
-export function buildNurseWhatsAppLink(classification: Classification): string | null {
+export function buildNurseWhatsAppLink(classification: Classification, referenceCode: string): string | null {
   if (classification !== "diabetes_high") {
     return null;
   }
@@ -26,6 +24,8 @@ export function buildNurseWhatsAppLink(classification: Classification): string |
   if (!normalizedNumber) {
     return null;
   }
+
+  const diabetesHighWhatsAppMessage = `Hello, I completed the Custodia screening. My reference code is ${referenceCode}. My result was diabetes_high, and I would like to chat with a nurse.`;
 
   return `https://wa.me/${normalizedNumber}?text=${encodeURIComponent(diabetesHighWhatsAppMessage)}`;
 }

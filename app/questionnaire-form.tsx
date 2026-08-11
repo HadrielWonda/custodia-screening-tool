@@ -16,6 +16,7 @@ type Responses = Record<string, FieldValue>;
 
 type SubmissionResult = {
   assessmentId: string;
+  referenceCode: string;
   result: {
     classification: Classification;
     score: number | null;
@@ -446,7 +447,7 @@ function YesNoField({
 function ResultSummary({ submissionResult }: { submissionResult: SubmissionResult }) {
   const { result } = submissionResult;
   const content = resultContent[result.classification];
-  const whatsappLink = buildNurseWhatsAppLink(result.classification);
+  const whatsappLink = buildNurseWhatsAppLink(result.classification, submissionResult.referenceCode);
   const [showWhatsAppFallback, setShowWhatsAppFallback] = useState(!whatsappLink);
   const showContributingFactors =
     result.classification === "no_diabetes_high" && result.contributingFactors.length > 0;
@@ -461,6 +462,7 @@ function ResultSummary({ submissionResult }: { submissionResult: SubmissionResul
         <p className="scoreLine">
           {result.score === null ? "Triggered by a red-flag response" : `Score: ${result.score}`}
         </p>
+        <p className="referenceLine">Reference: {submissionResult.referenceCode}</p>
       </div>
 
       {result.urgentCareRecommended ? <p className="urgent">Please seek urgent clinical care now.</p> : null}

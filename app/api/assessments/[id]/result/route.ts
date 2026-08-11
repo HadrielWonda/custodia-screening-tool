@@ -37,6 +37,7 @@ export async function GET(
   return NextResponse.json({
     assessment: {
       id: result.assessment.id,
+      referenceCode: result.assessment.referenceCode,
       diabetesStatus: fromPrismaDiabetesStatus(result.assessment.diabetesStatus),
       responses: result.assessment.responses,
       createdAt: result.assessment.createdAt,

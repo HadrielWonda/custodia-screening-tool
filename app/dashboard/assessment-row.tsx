@@ -8,6 +8,7 @@ type AssessmentRowProps = {
   diabetesStatus: string;
   flagged: boolean;
   href: string;
+  referenceCode: string;
   ruleVersion: string;
   score: string;
   submittedAt: string;
@@ -18,6 +19,7 @@ export function AssessmentRow({
   diabetesStatus,
   flagged,
   href,
+  referenceCode,
   ruleVersion,
   score,
   submittedAt,
@@ -42,7 +44,7 @@ export function AssessmentRow({
       onKeyDown={handleKeyDown}
       role="link"
       tabIndex={0}
-      aria-label={`Open assessment submitted ${submittedAt}`}
+      aria-label={`Open assessment ${referenceCode} submitted ${submittedAt}`}
     >
       <td>
         {flagged ? (
@@ -56,6 +58,7 @@ export function AssessmentRow({
       <td>
         <span className="rowLinkText">{submittedAt}</span>
       </td>
+      <td>{referenceCode}</td>
       <td>{diabetesStatus}</td>
       <td>{classification}</td>
       <td>{score}</td>

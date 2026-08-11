@@ -55,7 +55,9 @@ export default async function AssessmentDetailPage({ params }: AssessmentDetailP
           <div>
             <p className="eyebrow">Assessment detail</p>
             <h1>{formatClassification(classification)}</h1>
-            <p className="dashboardIntro">Submitted {formatDateTime(assessment.createdAt)}</p>
+            <p className="dashboardIntro">
+              Reference {assessment.referenceCode} · Submitted {formatDateTime(assessment.createdAt)}
+            </p>
           </div>
           {diabetesStatus === "diagnosed" && classification === "diabetes_high" ? (
             <span className="flagBadge detailFlag" aria-label="Diabetes high-risk follow-up">
@@ -68,6 +70,10 @@ export default async function AssessmentDetailPage({ params }: AssessmentDetailP
           <section className="detailBlock">
             <h2>Summary</h2>
             <dl className="summaryList">
+              <div>
+                <dt>Reference</dt>
+                <dd>{assessment.referenceCode}</dd>
+              </div>
               <div>
                 <dt>Diabetes status</dt>
                 <dd>{formatDiabetesStatus(diabetesStatus)}</dd>

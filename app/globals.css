@@ -212,6 +212,15 @@ h2 {
   font-weight: 700;
 }
 
+.referenceLine {
+  background: #fffdf5;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: inline-block;
+  font-weight: 700;
+  padding: 8px 10px;
+}
+
 .factorBox,
 .tipsBlock {
   margin-top: 18px;

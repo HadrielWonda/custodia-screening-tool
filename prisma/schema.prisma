@@ -37,6 +37,7 @@ enum Classification {
 
 model Assessment {
   id             String         @id @default(uuid())
+  referenceCode  String         @unique @map("reference_code")
   sessionId      String         @map("session_id")
   diabetesStatus DiabetesStatus @map("diabetes_status")
   responses      Json

@@ -67,6 +67,7 @@ export default async function NurseDashboardPage() {
                 <tr>
                   <th scope="col">Flag</th>
                   <th scope="col">Submitted</th>
+                  <th scope="col">Reference</th>
                   <th scope="col">Diabetes status</th>
                   <th scope="col">Classification</th>
                   <th scope="col">Score</th>
@@ -90,6 +91,7 @@ export default async function NurseDashboardPage() {
                       diabetesStatus={formatDiabetesStatus(diabetesStatus)}
                       flagged={isDiabetesHighRisk(assessment)}
                       href={`/dashboard/assessments/${assessment.id}`}
+                      referenceCode={assessment.referenceCode}
                       ruleVersion={
                         assessment.result
                           ? `${formatBranch(branch)} v${assessment.result.scoringRuleVersion.versionNumber}`
