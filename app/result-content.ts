@@ -67,9 +67,9 @@ export const resultContent: Record<Classification, ResultContent> = {
   },
   diabetes_high: {
     eyebrow: "Higher complication risk",
-    title: "A nurse should review your answers",
+    title: "Your answers suggest higher complication risk",
     summary:
-      "Your answers suggest you may need timely support for diabetes-related symptoms or complication risk.",
+      "This means you may need timely support for diabetes-related symptoms or possible complications. Chat with a nurse so they can review your answers and guide your next steps.",
     actionLabel: "Chat with a nurse on WhatsApp",
     tips: [
       "Keep taking prescribed medication unless a clinician tells you otherwise.",
