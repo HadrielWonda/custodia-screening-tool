@@ -1,91 +1,334 @@
+import { randomUUID } from "node:crypto";
+
 import { NextRequest, NextResponse } from "next/server";
 
+import { errorResponse, genericServerErrorMessage, isUniqueConstraintError, ScoringRuleUnavailableError } from "@/lib/api-errors";
 import {
-  assessmentSessionCookieName,
+  fromPrismaClassification,
+  fromPrismaScoringBranch,
+  fromPrismaUrgency,
   toPrismaClassification,
   toPrismaDiabetesStatus,
   toPrismaScoringBranch,
+  toPrismaUrgency,
 } from "@/lib/assessment-api";
 import { validateAssessmentSubmission } from "@/lib/assessment-submission";
+import { auditActions, recordAuditEvent } from "@/lib/audit";
+import { assessmentSessionCookieName, assessmentSessionMaxAgeSeconds, sessionCookieOptions } from "@/lib/cookies";
+import { AuditActorType, Prisma, ScoringRuleStatus } from "@/lib/generated/prisma/client";
+import { canonicalHash, hashForBranch } from "@/lib/hashing";
+import { logError, logEvent, logWarning } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
-import { scoreAssessment } from "@/lib/scoring";
+import { consumeRateLimits } from "@/lib/rate-limit";
+import { createReferenceCode } from "@/lib/reference-code";
+import { readRequestContext } from "@/lib/request-context";
+import { scoreAssessment, scoringRuleVersions, type ScoringResult } from "@/lib/scoring";
+
+const MAX_BODY_BYTES = 16 * 1024;
+const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9_.:-]{8,128}$/;
+
+const submissionRateLimits = {
+  perIp: { limit: 30, windowSeconds: 60 * 60 },
+  perSession: { limit: 5, windowSeconds: 60 * 60 },
+};
 
 export async function POST(request: NextRequest) {
-  let payload: unknown;
+  const startedAt = Date.now();
+  const context = readRequestContext(request.headers);
+  const sessionId = request.cookies.get(assessmentSessionCookieName())?.value ?? randomUUID();
 
   try {
-    payload = await request.json();
-  } catch {
-    return NextResponse.json({ errors: ["Request body must be valid JSON."] }, { status: 400 });
+    const declaredLength = Number(request.headers.get("content-length") ?? 0);
+
+    if (declaredLength > MAX_BODY_BYTES) {
+      return errorResponse(413, ["Request body is too large."]);
+    }
+
+    const rateLimit = await consumeRateLimits([
+      {
+        bucket: "assessment_submit_ip",
+        identifier: context.ipHash,
+        ...submissionRateLimits.perIp,
+      },
+      {
+        bucket: "assessment_submit_session",
+        identifier: sessionId,
+        ...submissionRateLimits.perSession,
+      },
+    ]);
+
+    if (!rateLimit.allowed) {
+      await recordAuditEvent({
+        action: auditActions.assessmentRateLimited,
+        actorType: AuditActorType.PUBLIC,
+        ipHash: context.ipHash,
+        userAgent: context.userAgent,
+        metadata: { bucket: rateLimit.bucket, count: rateLimit.count, limit: rateLimit.limit },
+      });
+      logWarning("assessment_rate_limited", { bucket: rateLimit.bucket, count: rateLimit.count });
+
+      return errorResponse(429, ["Too many screening submissions. Please try again later."], {
+        "Retry-After": String(rateLimit.retryAfterSeconds),
+      });
+    }
+
+    const idempotencyKey = request.headers.get("idempotency-key");
+
+    if (idempotencyKey && !IDEMPOTENCY_KEY_PATTERN.test(idempotencyKey)) {
+      return errorResponse(400, ["Idempotency-Key must be 8 to 128 URL-safe characters."]);
+    }
+
+    if (idempotencyKey) {
+      const replayed = await findStoredSubmission({ idempotencyKey });
+
+      if (replayed) {
+        await recordAuditEvent({
+          action: auditActions.assessmentReplayed,
+          actorType: AuditActorType.PUBLIC,
+          resourceType: "assessment",
+          resourceId: replayed.assessmentId,
+          ipHash: context.ipHash,
+          userAgent: context.userAgent,
+        });
+
+        return submissionResponse(replayed, sessionId, 200, true);
+      }
+    }
+
+    const rawBody = await request.text();
+
+    if (Buffer.byteLength(rawBody, "utf8") > MAX_BODY_BYTES) {
+      return errorResponse(413, ["Request body is too large."]);
+    }
+
+    let payload: unknown;
+
+    try {
+      payload = JSON.parse(rawBody);
+    } catch {
+      return errorResponse(400, ["Request body must be valid JSON."]);
+    }
+
+    const validation = validateAssessmentSubmission(payload);
+
+    if (!validation.ok) {
+      return errorResponse(400, validation.errors);
+    }
+
+    const scoringResult = scoreAssessment(validation.input);
+    const stored = await persistSubmission({
+      sessionId,
+      idempotencyKey,
+      responses: validation.responses,
+      scoringResult,
+    });
+
+    await recordAuditEvent({
+      action: auditActions.assessmentCreated,
+      actorType: AuditActorType.PUBLIC,
+      resourceType: "assessment",
+      resourceId: stored.assessmentId,
+      ipHash: context.ipHash,
+      userAgent: context.userAgent,
+      metadata: {
+        branch: scoringResult.branch,
+        classification: scoringResult.classification,
+        urgency: scoringResult.urgency,
+        ruleVersion: scoringResult.ruleVersion,
+      },
+    });
+    logEvent("assessment_created", {
+      assessmentId: stored.assessmentId,
+      branch: scoringResult.branch,
+      classification: scoringResult.classification,
+      urgency: scoringResult.urgency,
+      ruleVersion: scoringResult.ruleVersion,
+      durationMs: Date.now() - startedAt,
+    });
+
+    return submissionResponse(stored, sessionId, 201, false);
+  } catch (error) {
+    if (isUniqueConstraintError(error, "idempotency_key")) {
+      const winner = await findStoredSubmission({ idempotencyKey: request.headers.get("idempotency-key") ?? "" });
+
+      if (winner) {
+        return submissionResponse(winner, sessionId, 200, true);
+      }
+    }
+
+    if (error instanceof ScoringRuleUnavailableError) {
+      await recordAuditEvent({
+        action: auditActions.rulesetMismatch,
+        actorType: AuditActorType.SYSTEM,
+        ipHash: context.ipHash,
+        userAgent: context.userAgent,
+        metadata: { reason: error.reason },
+      });
+      logError("scoring_rule_unavailable", error, { reason: error.reason });
+
+      return errorResponse(503, [genericServerErrorMessage]);
+    }
+
+    logError("assessment_submission_failed", error, { durationMs: Date.now() - startedAt });
+
+    return errorResponse(500, [genericServerErrorMessage]);
   }
+}
 
-  const validation = validateAssessmentSubmission(payload);
+type StoredSubmission = {
+  assessmentId: string;
+  referenceCode: string;
+  resultId: string;
+  scoringRuleVersion: number;
+  result: ScoringResult;
+};
 
-  if (!validation.ok) {
-    return NextResponse.json({ errors: validation.errors }, { status: 400 });
-  }
+async function persistSubmission({
+  sessionId,
+  idempotencyKey,
+  responses,
+  scoringResult,
+}: {
+  sessionId: string;
+  idempotencyKey: string | null;
+  responses: Prisma.InputJsonValue;
+  scoringResult: ScoringResult;
+}): Promise<StoredSubmission> {
+  const expectedHash = hashForBranch(scoringResult.branch);
 
-  const sessionId = request.cookies.get(assessmentSessionCookieName)?.value ?? crypto.randomUUID();
-  const scoringResult = scoreAssessment(validation.input);
-  const activeRuleVersion = await prisma.scoringRuleVersion.findFirst({
-    where: {
-      branch: toPrismaScoringBranch(validation.branch),
-      effectiveFrom: { lte: new Date() },
-    },
-    orderBy: [{ effectiveFrom: "desc" }, { versionNumber: "desc" }],
-  });
+  return prisma.$transaction(async (transaction) => {
+    const ruleVersion = await transaction.scoringRuleVersion.findUnique({
+      where: {
+        branch_versionNumber: {
+          branch: toPrismaScoringBranch(scoringResult.branch),
+          versionNumber: scoringRuleVersions[scoringResult.branch],
+        },
+      },
+    });
 
-  if (!activeRuleVersion) {
-    return NextResponse.json(
-      { errors: ["No active scoring rule version is configured for this branch."] },
-      { status: 500 },
-    );
-  }
+    if (!ruleVersion) {
+      throw new ScoringRuleUnavailableError(`no rule row for ${scoringResult.branch} v${scoringResult.ruleVersion}`);
+    }
 
-  const saved = await prisma.$transaction(async (transaction) => {
+    if (ruleVersion.status !== ScoringRuleStatus.ACTIVE) {
+      throw new ScoringRuleUnavailableError(`rule ${ruleVersion.id} is ${ruleVersion.status}`);
+    }
+
+    if (ruleVersion.effectiveFrom.getTime() > Date.now()) {
+      throw new ScoringRuleUnavailableError(`rule ${ruleVersion.id} is not yet effective`);
+    }
+
+    if (ruleVersion.rulesetHash !== expectedHash) {
+      throw new ScoringRuleUnavailableError(
+        `rule ${ruleVersion.id} hash ${ruleVersion.rulesetHash.slice(0, 12)} does not match engine hash ${expectedHash.slice(0, 12)}`,
+      );
+    }
+
     const assessment = await transaction.assessment.create({
       data: {
-        referenceCode: createAssessmentReferenceCode(),
+        referenceCode: createReferenceCode(),
         sessionId,
-        diabetesStatus: toPrismaDiabetesStatus(validation.input.diabetesStatus),
-        responses: validation.responses,
+        idempotencyKey,
+        questionnaireVersion: scoringResult.questionnaireVersion,
+        responsesHash: canonicalHash(responses),
+        diabetesStatus: toPrismaDiabetesStatus(scoringResult.branch === "risk_of_diabetes" ? "not_diagnosed" : "diagnosed"),
+        responses,
       },
     });
     const result = await transaction.result.create({
       data: {
         assessmentId: assessment.id,
-        scoringRuleVersionId: activeRuleVersion.id,
+        scoringRuleVersionId: ruleVersion.id,
         classification: toPrismaClassification(scoringResult.classification),
+        urgency: toPrismaUrgency(scoringResult.urgency),
+        urgentCareRecommended: scoringResult.urgentCareRecommended,
         score: scoringResult.score,
         contributingFactors: scoringResult.contributingFactors,
+        redFlags: scoringResult.redFlags,
+        rulesetHash: expectedHash,
+        engineVersion: scoringResult.engineVersion,
       },
     });
 
-    return { assessment, result };
-  });
-
-  const response = NextResponse.json(
-    {
-      assessmentId: saved.assessment.id,
-      referenceCode: saved.assessment.referenceCode,
-      resultId: saved.result.id,
-      scoringRuleVersion: activeRuleVersion.versionNumber,
+    return {
+      assessmentId: assessment.id,
+      referenceCode: assessment.referenceCode,
+      resultId: result.id,
+      scoringRuleVersion: ruleVersion.versionNumber,
       result: scoringResult,
-    },
-    { status: 201 },
-  );
-
-  response.cookies.set(assessmentSessionCookieName, sessionId, {
-    httpOnly: true,
-    maxAge: 60 * 60 * 24 * 30,
-    path: "/",
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    };
   });
-
-  return response;
 }
 
-function createAssessmentReferenceCode() {
-  return `CST-${crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase()}`;
+async function findStoredSubmission({
+  idempotencyKey,
+}: {
+  idempotencyKey: string;
+}): Promise<StoredSubmission | null> {
+  const assessment = await prisma.assessment.findUnique({
+    where: { idempotencyKey },
+    include: { result: { include: { scoringRuleVersion: true } } },
+  });
+
+  if (!assessment?.result) {
+    return null;
+  }
+
+  return {
+    assessmentId: assessment.id,
+    referenceCode: assessment.referenceCode,
+    resultId: assessment.result.id,
+    scoringRuleVersion: assessment.result.scoringRuleVersion.versionNumber,
+    result: rebuildScoringResult(assessment.result, assessment.questionnaireVersion),
+  };
+}
+
+function rebuildScoringResult(
+  result: Prisma.ResultGetPayload<{ include: { scoringRuleVersion: true } }>,
+  questionnaireVersion: string,
+): ScoringResult {
+  return {
+    branch: fromPrismaScoringBranch(result.scoringRuleVersion.branch),
+    ruleVersion: result.scoringRuleVersion.versionNumber,
+    questionnaireVersion,
+    engineVersion: result.engineVersion,
+    classification: fromPrismaClassification(result.classification),
+    score: result.score === null ? null : Number(result.score),
+    contributingFactors: (result.contributingFactors ?? []) as ScoringResult["contributingFactors"],
+    redFlags: (result.redFlags ?? []) as ScoringResult["redFlags"],
+    urgency: fromPrismaUrgency(result.urgency),
+    urgentCareRecommended: result.urgentCareRecommended,
+  };
+}
+
+function submissionResponse(
+  stored: StoredSubmission,
+  sessionId: string,
+  status: number,
+  replayed: boolean,
+) {
+  const response = NextResponse.json(
+    {
+      assessmentId: stored.assessmentId,
+      referenceCode: stored.referenceCode,
+      resultId: stored.resultId,
+      scoringRuleVersion: stored.scoringRuleVersion,
+      result: stored.result,
+    },
+    {
+      status,
+      headers: {
+        "Cache-Control": "no-store",
+        "Idempotency-Replayed": String(replayed),
+      },
+    },
+  );
+
+  response.cookies.set(
+    assessmentSessionCookieName(),
+    sessionId,
+    sessionCookieOptions(assessmentSessionMaxAgeSeconds),
+  );
+
+  return response;
 }
